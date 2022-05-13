@@ -74,7 +74,7 @@ def main_window():
     ]
     # Main layout
     layout = [
-        [sg.Canvas(size=(400, 100), background_color='Grey')],
+        [sg.Image('logo.png', size=(400, 100))],
         [sg.Input(size=(49, 1), key='-url-', border_width=0), sg.Button(button_text='Paste', key='-paste-', border_width=0)],
         [sg.Column(layout=in_column1), sg.Column(layout=in_column2)],
         [sg.Frame(title='Destination folder', title_location='n', layout=select_folder)],
