@@ -1,8 +1,10 @@
+from faulthandler import disable
 import PySimpleGUI as sg
 from pytube import YouTube
 from pytube import exceptions
 import moviepy.editor as mp
 import time, os
+from threading import Thread
 
 
 class Video:
@@ -11,6 +13,14 @@ class Video:
     
     def download(self, quality, path):
         '''Download the video in High Quality, Low Quality or MP3'''
+        global window
+        # Change the buttons to DISABLED buttons
+        window['-HQ-'].hide_row()
+        window['-LQ-'].hide_row()
+        window['-MP3-'].hide_row()
+        window['-disHQ-'].unhide_row()
+        window['-disLQ-'].unhide_row()
+        window['-disMP3-'].unhide_row()
         if quality == '-MP3-':
             '''The button pressed is Audio MP3, so download as audio .mp4 and convert to .mp3'''
             audio = self.yt.streams.get_audio_only()
@@ -23,11 +33,21 @@ class Video:
         elif quality == '-HQ-':
             '''Select the highest resolution and download them'''
             video = self.yt.streams.get_highest_resolution()
-            video.download(path)
+            title = str(video.title)
+            video.download(path, filename=f'{title} [HQ].mp4')
         elif quality == '-LQ-':
             '''Select the lowest resolution and download them'''
             video = self.yt.streams.get_lowest_resolution()
-            video.download(path)
+            title = str(video.title)
+            video.download(path, filename=f'{title} [LQ].mp4')
+        # Change the buttons to ENABLED buttons again
+        window['-HQ-'].unhide_row()
+        window['-LQ-'].unhide_row()
+        window['-MP3-'].unhide_row()
+        window['-disHQ-'].hide_row()
+        window['-disLQ-'].hide_row()
+        window['-disMP3-'].hide_row()
+        print(f'Download Done!')
 
 
 def main_window():
@@ -36,7 +56,10 @@ def main_window():
     in_column1 = [
         [sg.Button('High Quality', size=(17, 4), key='-HQ-', border_width=0)],
         [sg.Button('Low Quality', size=(17, 4), key='-LQ-', border_width=0)],
-        [sg.Button('Audio MP3', size=(17, 4), key='-MP3-', border_width=0)]
+        [sg.Button('Audio MP3', size=(17, 4), key='-MP3-', border_width=0)],
+        [sg.Button('Downloading...', size=(17, 4), key='-disHQ-', border_width=0, disabled=True)],
+        [sg.Button('Downloading...', size=(17, 4), key='-disLQ-', border_width=0, disabled=True)],
+        [sg.Button('Downloading...', size=(17, 4), key='-disMP3-', border_width=0, disabled=True)],
     ]
     # Space to show the thumbnail (not yet implemented)
     in_column2 = [
@@ -63,6 +86,10 @@ def main_window():
 
 sg.theme('Black') # Set theme
 window = main_window() # Set Window instance
+# Hide the disabled buttons
+window['-disHQ-'].hide_row()
+window['-disLQ-'].hide_row()
+window['-disMP3-'].hide_row()
 path = rf'C:\Users\{os.getlogin()}\Downloads'
 # Mainloop
 while True:
@@ -80,7 +107,8 @@ while True:
         '''If the user click in an Download button'''
         try:
             video = Video(values['-url-'])
-            video.download(event, path) # Download the video in the quality of the clicked button and in the place selected
+            # Download the video in the quality of the clicked button and in the place selected
+            download_thread = Thread(target=video.download, args=(event, path)).start() 
         except exceptions.RegexMatchError: # Raise RegexMatchError if the url is a invalid youtube url so...
             sg.popup('Invalid URL!')
             window['-url-'].update('') # Clear the Url Field
