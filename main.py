@@ -1,3 +1,4 @@
+from pickletools import optimize
 import PySimpleGUI as sg
 from pytube import YouTube
 from pytube import exceptions
@@ -6,6 +7,7 @@ import time, os
 from threading import Thread
 import requests
 from PIL import Image
+import cv2
 
 class Video:
     def __init__(self, url):
@@ -39,30 +41,30 @@ class Video:
             window['-disLQ-'].unhide_row()
             window['-disMP3-'].unhide_row()
             filename = self.format_title(self.yt.title[:])
-            window['-status-'].update('Downloading...')
+            window['-status-'].update('Downloading...', text_color='Grey')
             if quality == '-MP3-':
                 '''The button pressed is Audio MP3, so download as audio .mp4 and convert to .mp3'''
                 video = self.yt.streams.get_audio_only()
                 video.download(path, filename=f'{filename}.mp4') # Download in the specified folder (path)
-                window['-status-'].update('Converting to mp3...')
+                window['-status-'].update('Converting to mp3...', text_color='Yellow')
                 mp3 = mp.AudioFileClip(f'{path}/{filename}.mp4') # Set the .mp4 audio
                 time.sleep(0.5)
                 mp3.write_audiofile(f'{path}/{filename}.mp3', verbose=False) # Create a .mp3
                 time.sleep(0.5)
                 os.remove(f'{path}/{filename}.mp4') # Delete the .mp4
-                window['-status-'].update('Download sucessful! [MP3]')
+                window['-status-'].update('Download sucessful! [MP3]', text_color='Green')
             elif quality == '-HQ-':
                 '''Select the highest resolution and download them'''
                 video = self.yt.streams.get_highest_resolution()
                 video.download(path, filename=f'{filename} [HQ].mp4')
-                window['-status-'].update('Download sucessful! [HQ]')
+                window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
             elif quality == '-LQ-':
                 '''Select the lowest resolution and download them'''
                 video = self.yt.streams.get_lowest_resolution()
                 video.download(path, filename=f'{filename} [LQ].mp4')
-                window['-status-'].update('Download sucessful! [HQ]')
+                window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
         except PermissionError:
-            window['-status-'].update('Permission Error! You have to give admin permission to save in that folder!')
+            window['-status-'].update('Error! That folder needs ADMIN PERMISSION!', text_color='Red')
         finally:
             # Change the buttons to ENABLED buttons again
             window['-disHQ-'].hide_row()
@@ -87,7 +89,7 @@ def main_window():
     ]
     # Space to show the thumbnail
     in_column2 = [
-        [sg.Image(source='thumb.png', key='-thumb-', size=(350, 230), pad=0)]
+        [sg.Image(source='images/thumb.png', key='-thumb-', size=(350, 230), pad=0)]
     ]
     # Layout for the Frame (Select the destination folder)
     select_folder = [
@@ -98,14 +100,14 @@ def main_window():
     ]
     # Main layout
     layout = [
-        [sg.Image('logo.png', size=(480, 100), pad=0)],
+        [sg.Image('images/logo.png', size=(480, 100), pad=0)],
         [
             sg.Input(size=(61, 1), key='-url-', border_width=0), 
             sg.Button(button_text='Done!', key='-paste-', border_width=0, bind_return_key=True)
         ],
         [sg.Text(key='-title-', size=(59, 1), justification='center')],
         [sg.Column(layout=in_column1, pad=0), sg.Column(layout=in_column2, pad=0)],
-        [sg.Text(key='-status-', size=(59, 1), justification='center')],
+        [sg.Text(key='-status-', size=(54, 1), justification='center', font='Consolas')],
         [sg.Frame(title='Destination folder', title_location='n', layout=select_folder)],
         [sg.Text('Developed by Ezequiel Almeida', size=(60, 1), justification='center', text_color='grey')]
     ]
@@ -121,16 +123,17 @@ def set_thumbnail_and_title(video):
     else:
         video_title = video.yt.title
     download_thumbnail(video_url)
-    window['-thumb-'].update(source='temp.png', size=(350, 230))
+    window['-thumb-'].update(source='images/temp.png', size=(350, 230))
     window['-title-'].update(video_title)
+    os.remove('temp.png')
 
 
 def download_thumbnail(url):
     '''Download and prepare the thumbnail image to show on the interface'''
     img_data = requests.get(YouTube(url).thumbnail_url).content
-    with open('temp.png', 'wb') as handler:
+    with open('images/temp.png', 'wb') as handler:
         handler.write(img_data)
-    compress_image('temp.png')
+    compress_image('images/temp.png')
 
 
 def compress_image(path):
@@ -143,6 +146,7 @@ def compress_image(path):
 def set_video(url):
     '''Set video throught a valid url'''
     global window
+    window['-status-'].update('')
     try:
         video = Video(url)
     except exceptions.RegexMatchError: # Raise RegexMatchError if the url is a invalid youtube url so...
