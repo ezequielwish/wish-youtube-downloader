@@ -174,7 +174,7 @@ while True:
         if values['-url-'] == '':
             url = sg.clipboard_get()
             window['-url-'].update(url) # Paste the current clipboard data on the Input
-            video = set_video(url) # 
+            video = set_video(url)
         else: 
             video = set_video(values['-url-']) # Try to set the video with the current url on the -url- field
     else:
