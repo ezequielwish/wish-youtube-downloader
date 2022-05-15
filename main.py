@@ -1,4 +1,3 @@
-from pickletools import optimize
 import PySimpleGUI as sg
 from pytube import YouTube
 from pytube import exceptions
@@ -7,7 +6,6 @@ import time, os
 from threading import Thread
 import requests
 from PIL import Image
-import cv2
 
 class Video:
     def __init__(self, url):
@@ -73,7 +71,6 @@ class Video:
             window['-HQ-'].unhide_row()
             window['-LQ-'].unhide_row()
             window['-MP3-'].unhide_row()
-        
 
 
 def main_window():
@@ -125,7 +122,7 @@ def set_thumbnail_and_title(video):
     download_thumbnail(video_url)
     window['-thumb-'].update(source='images/temp.png', size=(350, 230))
     window['-title-'].update(video_title)
-    os.remove('temp.png')
+    os.remove('images/temp.png')
 
 
 def download_thumbnail(url):
@@ -139,8 +136,8 @@ def download_thumbnail(url):
 def compress_image(path):
     '''Compress and resize a image to appear in the interface'''
     image = Image.open(path)
-    image.resize(size=(330, 230), reducing_gap=Image.ANTIALIAS)
-    image.save(path, optimize=True, quality=95)
+    image.resize(size=(1000, 1000), reducing_gap=Image.ANTIALIAS)
+    image.save(path, optimize=True, quality=50)
 
 
 def set_video(url):
