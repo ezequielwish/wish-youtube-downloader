@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from pytube import YouTube
 from pytube import exceptions
-import moviepy.editor as mp
+from  moviepy.editor import AudioFileClip
 import time, os
 from threading import Thread
 import requests
@@ -45,7 +45,7 @@ class Video:
                 video = self.yt.streams.get_audio_only()
                 video.download(path, filename=f'{filename}.mp4') # Download in the specified folder (path)
                 window['-status-'].update('Converting to mp3...', text_color='Yellow')
-                mp3 = mp.AudioFileClip(f'{path}/{filename}.mp4') # Set the .mp4 audio
+                mp3 = AudioFileClip(f'{path}/{filename}.mp4') # Set the .mp4 audio
                 time.sleep(0.5)
                 mp3.write_audiofile(f'{path}/{filename}.mp3', verbose=False) # Create a .mp3
                 time.sleep(0.5)
