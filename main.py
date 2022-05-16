@@ -1,10 +1,7 @@
 import PySimpleGUI as sg
-from pytube import YouTube
-from pytube import exceptions
-from  moviepy.editor import AudioFileClip
-import time, os
+from pytube import YouTube, exceptions
 from threading import Thread
-import requests
+import requests, os
 from PIL import Image
 
 class Video:
@@ -13,13 +10,18 @@ class Video:
         self.yt = YouTube(url)
 
     @staticmethod
-    def format_title(title):
+    def format_title(title, no_spaces=False):
         '''Turns the video title valid to Windows OS filenames'''
         new = []
         for char in title: # Separate only valid characters and put on the list
-            if char == '|':
+            if char == ' ':
+                if no_spaces:
+                    new.append('_')
+                else:
+                    new.append(char)
+            elif char == '|':
                 new.append('-')
-            elif char.lower() in (r'aáàãâbcdeéèêfghiíìjklmnopqrstuvwxyz0987654321([{}])/$& ~-".,:;?'):
+            elif char.lower() in (r'aáàãâbcdeéèêfghiíìjklmnopqrstuvwxyz0987654321([{}])/$&~-".,:;?'):
                 new.append(char)
         new = ''.join(new) # Convert list on a string
         if len(new) <= 50: # 50 charactere is a good lenght to filenames
@@ -38,26 +40,28 @@ class Video:
             window['-disHQ-'].unhide_row()
             window['-disLQ-'].unhide_row()
             window['-disMP3-'].unhide_row()
-            filename = self.format_title(self.yt.title[:])
+            filename = self.yt.title[:]
             window['-status-'].update('Downloading...', text_color='Grey')
             if quality == '-MP3-':
                 '''The button pressed is Audio MP3, so download as audio .mp4 and convert to .mp3'''
+                filename = self.format_title(filename, no_spaces=True)
                 video = self.yt.streams.get_audio_only()
                 video.download(path, filename=f'{filename}.mp4') # Download in the specified folder (path)
                 window['-status-'].update('Converting to mp3...', text_color='Yellow')
-                mp3 = AudioFileClip(f'{path}/{filename}.mp4') # Set the .mp4 audio
-                time.sleep(0.5)
-                mp3.write_audiofile(f'{path}/{filename}.mp3', verbose=False) # Create a .mp3
-                time.sleep(0.5)
+                mp4 = f'{path}\{filename}.mp4' # Set the .mp4 audio path
+                mp3 = f'{path}\{filename}.mp3' # Set the .mp3 audio path
+                os.system(f'ffmpeg -i {mp4} -vn {mp3} -y') # Convert with ffmpeg
                 os.remove(f'{path}/{filename}.mp4') # Delete the .mp4
                 window['-status-'].update('Download sucessful! [MP3]', text_color='Green')
             elif quality == '-HQ-':
                 '''Select the highest resolution and download them'''
+                filename = self.format_title(filename)
                 video = self.yt.streams.get_highest_resolution()
                 video.download(path, filename=f'{filename} [HQ].mp4')
                 window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
             elif quality == '-LQ-':
                 '''Select the lowest resolution and download them'''
+                filename = self.format_title(filename)
                 video = self.yt.streams.get_lowest_resolution()
                 video.download(path, filename=f'{filename} [LQ].mp4')
                 window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
@@ -136,7 +140,7 @@ def download_thumbnail(url):
 def compress_image(path):
     '''Compress and resize a image to appear in the interface'''
     image = Image.open(path)
-    image.resize(size=(1000, 1000), reducing_gap=Image.ANTIALIAS)
+    image.resize(size=(350, 230))
     image.save(path, optimize=True, quality=50)
 
 
