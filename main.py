@@ -159,6 +159,7 @@ def set_video(url):
 
 
 sg.theme('Black') # Set theme
+sg.set_global_icon('icon.ico') # Set icon
 window = main_window() # Set Window instance
 # Hide the disabled buttons
 window['-disHQ-'].hide_row()
