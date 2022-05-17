@@ -1,4 +1,7 @@
+from pickle import FALSE, TRUE
+from sys import maxsize
 import PySimpleGUI as sg
+from numpy import source
 from pytube import YouTube, exceptions
 from threading import Thread
 import requests, os
@@ -21,9 +24,9 @@ class Video:
                     new.append(char)
             elif char == '|':
                 new.append('-')
-            elif char.lower() in (r'aáàãâbcdeéèêfghiíìjklmnopqrstuvwxyz0987654321([{}])/$&~-".,:;?'):
+            elif char.lower() in (r'aáàãâbcdeéèêfghiíìjklmnopqrstuvwxyz0987654321([{}])/$&~#@!-".,?'):
                 new.append(char)
-        new = ''.join(new) # Convert list on a string
+        new = ''.join(new).strip() # Convert list on a string
         if len(new) <= 50: # 50 charactere is a good lenght to filenames
             return new
         else:
@@ -90,30 +93,31 @@ def main_window():
     ]
     # Space to show the thumbnail
     in_column2 = [
-        [sg.Image(source='images/thumb.png', key='-thumb-', size=(350, 230), pad=0)]
+        [sg.Image('images/thumb.png', key='-thumb-', size=(350, 230), pad=0, enable_events=True)]
     ]
     # Layout for the Frame (Select the destination folder)
     select_folder = [
         [
-            sg.Text(size=(50, 1), key='-folder-', border_width=0), 
+            sg.Text(size=(52, 1), key='-folder-', border_width=0, background_color='Grey10'), 
             sg.Button(button_text='Browse', key='-path-', border_width=0)
         ]
     ]
     # Main layout
     layout = [
         [sg.Image('images/logo.png', size=(480, 100), pad=0)],
+        [sg.Text(text='')],
         [
-            sg.Input(size=(61, 1), key='-url-', border_width=0), 
+            sg.Input(size=(61, 1), key='-url-', border_width=0, background_color='Grey10', text_color='White'), 
             sg.Button(button_text='Done!', key='-paste-', border_width=0, bind_return_key=True)
         ],
         [sg.Text(key='-title-', size=(59, 1), justification='center')],
         [sg.Column(layout=in_column1, pad=0), sg.Column(layout=in_column2, pad=0)],
         [sg.Text(key='-status-', size=(54, 1), justification='center', font='Consolas')],
-        [sg.Frame(title='Destination folder', title_location='n', layout=select_folder)],
-        [sg.Text('Developed by Ezequiel Almeida', size=(60, 1), justification='center', text_color='grey')]
+        [sg.Frame(title='Choose the destination folder:', title_location='n', layout=select_folder, border_width=0)],
+        [sg.Text('Developed by Ezequiel Almeida', size=(60, 1), justification='center', text_color='Grey')]
     ]
     # Return the window as Object
-    return sg.Window(title='Wish Youtube Downloader', layout = layout, finalize=True)
+    return sg.Window(title='Wish Youtube Downloader', layout = layout, finalize=True, element_justification='Center', size=(540, 560), icon='icon.ico', keep_on_top=True)
 
 
 def set_thumbnail_and_title(video):
@@ -126,7 +130,6 @@ def set_thumbnail_and_title(video):
     download_thumbnail(video_url)
     window['-thumb-'].update(source='images/temp.png', size=(350, 230))
     window['-title-'].update(video_title)
-    os.remove('images/temp.png')
 
 
 def download_thumbnail(url):
@@ -151,7 +154,7 @@ def set_video(url):
     try:
         video = Video(url)
     except exceptions.RegexMatchError: # Raise RegexMatchError if the url is a invalid youtube url so...
-        sg.popup('Invalid Url!')
+        window['-status-'].update('Invalid URL!', text_color='Red')
         window['-url-'].update('') # Clear the Url Field
     else:
         set_thumbnail_and_title(video)
@@ -183,8 +186,15 @@ while True:
             video = set_video(url)
         else: 
             video = set_video(values['-url-']) # Try to set the video with the current url on the -url- field
+    elif event == '-thumb-':
+        event, values = sg.Window('Thumbnail Viewer', layout=[[sg.Image('images/temp.png')]], keep_on_top=True).read()
     else:
         '''If the user click in a Download button'''
         video = set_video(values['-url-'])
         # Download the video in the quality of the clicked button and in the place selected
         start_download = Thread(target=video.download, args=(event, path)).start()
+
+try:
+    os.remove('images/temp.png')
+except FileNotFoundError:
+    pass
