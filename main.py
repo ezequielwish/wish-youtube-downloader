@@ -3,6 +3,7 @@ from pytube import YouTube, exceptions
 from threading import Thread
 import requests, os
 from PIL import Image
+import moviepy.editor as mp
 
 class Video:
     def __init__(self, url):
@@ -29,6 +30,12 @@ class Video:
         else:
             return new[:51]+'...' # Return only the first 50 characteres to bypass Filename Lenght eror
 
+    @staticmethod
+    def convert_mp4_to_mp3(path, filename):
+        with mp.AudioFileClip(f'{path}\{filename}.mp4') as audioclip:
+            audioclip.write_audiofile(f'{path}\{filename}.mp3')
+        os.remove(f'{path}/{filename}.mp4') # Delete the .mp4
+
     def download(self, quality, path):
         '''Download the video in High Quality, Low Quality or MP3'''
         global main_interface
@@ -40,28 +47,22 @@ class Video:
             main_interface['-disHQ-'].unhide_row()
             main_interface['-disLQ-'].unhide_row()
             main_interface['-disMP3-'].unhide_row()
-            filename = self.yt.title[:]
+            filename = self.format_title(self.yt.title[:])
             main_interface['-status-'].update('Downloading...', text_color='Grey')
             if quality == '-MP3-':
                 '''The button pressed is Audio MP3, so download as audio .mp4 and convert to .mp3'''
-                filename = self.format_title(filename, no_spaces=True)
                 video = self.yt.streams.get_audio_only()
                 video.download(path, filename=f'{filename}.mp4') # Download in the specified folder (path)
                 main_interface['-status-'].update('Converting to mp3...', text_color='Yellow')
-                mp4 = f'{path}\{filename}.mp4' # Set the .mp4 audio path
-                mp3 = f'{path}\{filename}.mp3' # Set the .mp3 audio path
-                os.system(f'ffmpeg -i {mp4} -vn {mp3} -y') # Convert with ffmpeg
-                os.remove(f'{path}/{filename}.mp4') # Delete the .mp4
+                self.convert_mp4_to_mp3(path, filename)
                 main_interface['-status-'].update('Download sucessful! [MP3]', text_color='Green')
             elif quality == '-HQ-':
                 '''Select the highest resolution and download them'''
-                filename = self.format_title(filename)
                 video = self.yt.streams.get_highest_resolution()
                 video.download(path, filename=f'{filename} [HQ].mp4')
                 main_interface['-status-'].update('Download sucessful! [HQ]', text_color='Green')
             elif quality == '-LQ-':
                 '''Select the lowest resolution and download them'''
-                filename = self.format_title(filename)
                 video = self.yt.streams.get_lowest_resolution()
                 video.download(path, filename=f'{filename} [LQ].mp4')
                 main_interface['-status-'].update('Download sucessful! [HQ]', text_color='Green')
