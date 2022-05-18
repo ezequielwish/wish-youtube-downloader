@@ -1,7 +1,4 @@
-from pickle import FALSE, TRUE
-from sys import maxsize
 import PySimpleGUI as sg
-from numpy import source
 from pytube import YouTube, exceptions
 from threading import Thread
 import requests, os
@@ -34,50 +31,50 @@ class Video:
 
     def download(self, quality, path):
         '''Download the video in High Quality, Low Quality or MP3'''
-        global window
+        global main_interface
         # Change the buttons to DISABLED buttons
         try:
-            window['-HQ-'].hide_row()
-            window['-LQ-'].hide_row()
-            window['-MP3-'].hide_row()
-            window['-disHQ-'].unhide_row()
-            window['-disLQ-'].unhide_row()
-            window['-disMP3-'].unhide_row()
+            main_interface['-HQ-'].hide_row()
+            main_interface['-LQ-'].hide_row()
+            main_interface['-MP3-'].hide_row()
+            main_interface['-disHQ-'].unhide_row()
+            main_interface['-disLQ-'].unhide_row()
+            main_interface['-disMP3-'].unhide_row()
             filename = self.yt.title[:]
-            window['-status-'].update('Downloading...', text_color='Grey')
+            main_interface['-status-'].update('Downloading...', text_color='Grey')
             if quality == '-MP3-':
                 '''The button pressed is Audio MP3, so download as audio .mp4 and convert to .mp3'''
                 filename = self.format_title(filename, no_spaces=True)
                 video = self.yt.streams.get_audio_only()
                 video.download(path, filename=f'{filename}.mp4') # Download in the specified folder (path)
-                window['-status-'].update('Converting to mp3...', text_color='Yellow')
+                main_interface['-status-'].update('Converting to mp3...', text_color='Yellow')
                 mp4 = f'{path}\{filename}.mp4' # Set the .mp4 audio path
                 mp3 = f'{path}\{filename}.mp3' # Set the .mp3 audio path
                 os.system(f'ffmpeg -i {mp4} -vn {mp3} -y') # Convert with ffmpeg
                 os.remove(f'{path}/{filename}.mp4') # Delete the .mp4
-                window['-status-'].update('Download sucessful! [MP3]', text_color='Green')
+                main_interface['-status-'].update('Download sucessful! [MP3]', text_color='Green')
             elif quality == '-HQ-':
                 '''Select the highest resolution and download them'''
                 filename = self.format_title(filename)
                 video = self.yt.streams.get_highest_resolution()
                 video.download(path, filename=f'{filename} [HQ].mp4')
-                window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
+                main_interface['-status-'].update('Download sucessful! [HQ]', text_color='Green')
             elif quality == '-LQ-':
                 '''Select the lowest resolution and download them'''
                 filename = self.format_title(filename)
                 video = self.yt.streams.get_lowest_resolution()
                 video.download(path, filename=f'{filename} [LQ].mp4')
-                window['-status-'].update('Download sucessful! [HQ]', text_color='Green')
+                main_interface['-status-'].update('Download sucessful! [HQ]', text_color='Green')
         except PermissionError:
-            window['-status-'].update('Error! That folder needs ADMIN PERMISSION!', text_color='Red')
+            main_interface['-status-'].update('Error! That folder needs ADMIN PERMISSION!', text_color='Red')
         finally:
             # Change the buttons to ENABLED buttons again
-            window['-disHQ-'].hide_row()
-            window['-disLQ-'].hide_row()
-            window['-disMP3-'].hide_row()
-            window['-HQ-'].unhide_row()
-            window['-LQ-'].unhide_row()
-            window['-MP3-'].unhide_row()
+            main_interface['-disHQ-'].hide_row()
+            main_interface['-disLQ-'].hide_row()
+            main_interface['-disMP3-'].hide_row()
+            main_interface['-HQ-'].unhide_row()
+            main_interface['-LQ-'].unhide_row()
+            main_interface['-MP3-'].unhide_row()
 
 
 def main_window():
@@ -89,11 +86,11 @@ def main_window():
         [sg.Button('Audio MP3', size=(15, 4), key='-MP3-', border_width=0)],
         [sg.Button('Downloading...', size=(15, 4), key='-disHQ-', border_width=0, disabled=True)],
         [sg.Button('Downloading...', size=(15, 4), key='-disLQ-', border_width=0, disabled=True)],
-        [sg.Button('Downloading...', size=(15, 4), key='-disMP3-', border_width=0, disabled=True)],
+        [sg.Button('Downloading...', size=(15, 4), key='-disMP3-', border_width=0, disabled=True)]
     ]
     # Space to show the thumbnail
     in_column2 = [
-        [sg.Image('images/thumb.png', key='-thumb-', size=(350, 230), pad=0, enable_events=True)]
+        [sg.Image('images/thumb.png', size=(350, 230), pad=0, enable_events=True, key='-thumb-')]
     ]
     # Layout for the Frame (Select the destination folder)
     select_folder = [
@@ -118,6 +115,20 @@ def main_window():
     ]
     # Return the window as Object
     return sg.Window(title='Wish Youtube Downloader', layout = layout, finalize=True, element_justification='Center', size=(540, 560), icon='icon.ico', keep_on_top=True)
+
+
+def thumbnail_preview_window():
+    '''Window object for thumbnail preview and download'''
+    thumbnail_preview = [
+                [sg.Image('images/temp.png', pad=0)], 
+                [sg.Button('Save Thumbnail', key='-thumbnail_save-', border_width=0)]
+            ]
+    return sg.Window('Thumbnail', layout=thumbnail_preview, keep_on_top=True, element_justification='Center', finalize=True)
+
+
+def thumbnail_save(path, title):
+    '''Copy the temp.png from images folder to the specified path with the specified title'''
+    os.system(fr'copy images\temp.png {path}\[THUMBNAIL]_{title}.png')
 
 
 def set_thumbnail_and_title(video):
@@ -149,13 +160,13 @@ def compress_image(path):
 
 def set_video(url):
     '''Set video throught a valid url'''
-    global window
-    window['-status-'].update('')
+    global main_interface
+    main_interface['-status-'].update('')
     try:
         video = Video(url)
     except exceptions.RegexMatchError: # Raise RegexMatchError if the url is a invalid youtube url so...
-        window['-status-'].update('Invalid URL!', text_color='Red')
-        window['-url-'].update('') # Clear the Url Field
+        main_interface['-status-'].update('Invalid URL!', text_color='Red')
+        main_interface['-url-'].update('') # Clear the Url Field
     else:
         set_thumbnail_and_title(video)
         return video
@@ -163,38 +174,50 @@ def set_video(url):
 
 sg.theme('Black') # Set theme
 sg.set_global_icon('icon.ico') # Set icon
-window = main_window() # Set Window instance
+main_interface, preview_window = main_window(), None # Set Window instance
 # Hide the disabled buttons
-window['-disHQ-'].hide_row()
-window['-disLQ-'].hide_row()
-window['-disMP3-'].hide_row()
+main_interface['-disHQ-'].hide_row()
+main_interface['-disLQ-'].hide_row()
+main_interface['-disMP3-'].hide_row()
 path = rf'C:\Users\{os.getlogin()}\Downloads'
 # Mainloop
 while True:
-    window['-folder-'].update(path) # Show the current Destination Folder on the Label
-    event, values = window.Read()
-    if event == sg.WIN_CLOSED: # If the user closes the window
-        break
-    elif event == '-path-': # If the user click on the Browse button
-        new_path = sg.PopupGetFolder(no_window=True, message='')
-        if new_path != '':
-            path = new_path
-    elif event == '-paste-': # If the user click on the Paste button
-        if values['-url-'] == '':
-            url = sg.clipboard_get()
-            window['-url-'].update(url) # Paste the current clipboard data on the Input
-            video = set_video(url)
-        else: 
-            video = set_video(values['-url-']) # Try to set the video with the current url on the -url- field
-    elif event == '-thumb-':
-        event, values = sg.Window('Thumbnail Viewer', layout=[[sg.Image('images/temp.png')]], keep_on_top=True).read()
-    else:
-        '''If the user click in a Download button'''
-        video = set_video(values['-url-'])
-        # Download the video in the quality of the clicked button and in the place selected
-        start_download = Thread(target=video.download, args=(event, path)).start()
+    main_interface['-folder-'].update(path) # Show the current Destination Folder on the Label
+    window, event, values = sg.read_all_windows()
+    if window == main_interface:
+        if event == sg.WIN_CLOSED: # If the user closes the window
+            break
+        if event == '-path-': # If the user click on the Browse button
+            new_path = sg.PopupGetFolder(no_window=True, message='', keep_on_top=True)
+            if new_path != '':
+                if '/' in new_path:
+                    '''Invert bars'''
+                    path = new_path.replace('/', r'\ '[0])
+                else:
+                    path = new_path
+        elif event == '-paste-': # If the user click on the Paste button
+            if values['-url-'] == '':
+                url = sg.clipboard_get()
+                main_interface['-url-'].update(url) # Paste the current clipboard data on the Input
+                video = set_video(url)
+            else: 
+                video = set_video(values['-url-']) # Try to set the video with the current url on the -url- field
+        elif event == '-thumb-': # If the user click on the thumbnail preview
+            if os.path.isfile('images/temp.png'): # Check if a thumbnail has been setted by set_thumbnail_and_title() function
+                thumbnail_preview = thumbnail_preview_window() # Calls the thumbnail preview window
+        else:
+            '''If the user click in a Download button'''
+            video = set_video(values['-url-'])
+            # Download the video in the quality of the clicked button and in the place selected
+            start_download = Thread(target=video.download, args=(event, path)).start()
+    elif window == thumbnail_preview:
+        if event == sg.WIN_CLOSED: # If the user closes the window
+            window.close()
+        elif event == '-thumbnail_save-': # If the user click on the Download Thumbnail button
+            title = video.format_title(title=video.yt.title, no_spaces=True)
+            thumbnail_save(path, title)
+            window.close()
+            main_interface['-status-'].update('Thumbnail downloaded!', text_color='Green')
 
-try:
+if os.path.isfile('images/temp.png'):
     os.remove('images/temp.png')
-except FileNotFoundError:
-    pass
