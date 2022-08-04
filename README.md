@@ -51,7 +51,7 @@ Download para windows (.exe): <a>https://www.mediafire.com/file/752vp14212evshd/
 
 * ![](https://github.com/ezequielwish/wish-youtube-downloader/blob/master/screenshots/5.png?raw=true)
 
-#Agradecimentos:
+# Agradecimentos
 
 * Apoio da comunidade Python Brasil
 * Criador do Stackoverflow
